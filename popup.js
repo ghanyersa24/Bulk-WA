@@ -44,8 +44,8 @@ window.updateBadgeText = function () {
         badgeText.textContent = t('badge_detecting');
     }
 };
-window.renderPreview = () => renderPreview();
-window.updateVarHint = () => updateVarHint();
+window.renderPreview = renderPreview;
+window.updateVarHint = updateVarHint;
 
 // Init i18n — pasang listener tombol toggle & terapkan bahasa tersimpan.
 if (typeof initI18n === 'function') initI18n();
@@ -443,13 +443,12 @@ fileInputEl.addEventListener('change', async (e) => {
             return;
         }
 
-        const existing = new Set(contacts.map(c => c.phone));
+        const existingKeys = new Set(contacts.map(c => c.phone + '|' + JSON.stringify(c.vars)));
         let added = 0, skipped = 0;
 
         for (const row of rows) {
             const phone = String(row[phoneKey] || '').replace(/[^\d]/g, '');
             if (phone.length < 8) { skipped++; continue; }
-            if (existing.has(phone)) { skipped++; continue; }
 
             const vars = {};
             for (const h of headers) {
@@ -457,12 +456,15 @@ fileInputEl.addEventListener('change', async (e) => {
                 const key = normalizeKey(h);
                 if (!key) continue;
                 const val = String(row[h] ?? '').trim();
-                if (!val) continue; // skip nilai kosong
+                if (!val) continue;
                 vars[key] = val;
             }
 
+            const entryKey = phone + '|' + JSON.stringify(vars);
+            if (existingKeys.has(entryKey)) { skipped++; continue; }
+
             contacts.push({ phone, vars });
-            existing.add(phone);
+            existingKeys.add(entryKey);
             added++;
         }
 
